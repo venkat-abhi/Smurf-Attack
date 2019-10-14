@@ -4,14 +4,13 @@ import argparse
 import sys
 
 g_target_ip = ""
-g_broadcast_ip = ""
 g_subnet_ips = []
 
 
 """
 	This function computes the broadcast address using the subnet mask
 """
-def compute_broadcast_addr(subnet_mask):
+def get_subnet_ips(subnet_mask):
 	global g_subnet_ips
 
 	# Get the list of IP addresses belonging to the subnet
@@ -41,7 +40,7 @@ def start_smurf():
 
 
 def main():
-	global g_target_ip, g_broadcast_ip
+	global g_target_ip
 
 	# Get the args
 	parser = argparse.ArgumentParser()
@@ -57,7 +56,7 @@ def main():
 	if (subnet_mask == None):
 		sys.exit("[#] Please specify the subnet mask of the target network.\n[#] Exiting")
 
-	compute_broadcast_addr(subnet_mask)
+	get_subnet_ips(subnet_mask)
 
 	print("[*] Target IP: ", g_target_ip)
 
